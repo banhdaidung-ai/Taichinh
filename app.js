@@ -1,11 +1,34 @@
-// State Management
-let transactions = JSON.parse(localStorage.getItem('transactions')) || [
-    { id: '1', type: 'income', amount: 35000000, category: 'Lương', date: new Date().toISOString(), note: 'Lương tháng 10' },
-    { id: '2', type: 'expense', amount: 850000, category: 'Mua sắm', date: new Date().toISOString(), note: 'Siêu thị WinMart' },
-    { id: '3', type: 'expense', amount: 125000, category: 'Di chuyển', date: new Date().toISOString(), note: 'Grab ride' },
-    { id: '4', type: 'expense', amount: 2400000, category: 'Tiện ích', date: new Date().toISOString(), note: 'Tiền điện EVN' }
-];
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
+import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-analytics.js";
+import {
+    getFirestore,
+    collection,
+    addDoc,
+    deleteDoc,
+    doc,
+    onSnapshot,
+    query,
+    orderBy
+} from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
 
+// Your web app's Firebase configuration
+const firebaseConfig = {
+    apiKey: "AIzaSyDJWkTU7QSDGV1T_I6NNrSJ8m4GKHnf1m8",
+    authDomain: "taichinhbdd.firebaseapp.com",
+    projectId: "taichinhbdd",
+    storageBucket: "taichinhbdd.firebasestorage.app",
+    messagingSenderId: "210668152817",
+    appId: "1:210668152817:web:4aa1dbec581ecf7daa0650",
+    measurementId: "G-LKEEXHHSRC"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
+const db = getFirestore(app);
+
+// State Management
+let transactions = [];
 let myChart = null;
 
 // DOM Elements
@@ -15,6 +38,7 @@ const totalExpenseEl = document.getElementById('total-expense');
 const recentTransactionsList = document.getElementById('recent-transactions-list');
 const fullTransactionsList = document.getElementById('full-transactions-list');
 const budgetListEl = document.getElementById('budget-list');
+const filterTypeEl = document.getElementById('filter-type');
 
 // Utility functions
 function formatCurrency(amount) {
@@ -36,14 +60,6 @@ function formatDateDisplay(isoString) {
     const month = (d.getMonth() + 1).toString().padStart(2, '0');
     const year = d.getFullYear();
     return `${time} - ${day}/${month}/${year}`;
-}
-
-function generateID() {
-    return Math.floor(Math.random() * 100000000).toString();
-}
-
-function updateLocalStorage() {
-    localStorage.setItem('transactions', JSON.stringify(transactions));
 }
 
 // Category Mapping
@@ -68,7 +84,6 @@ function createTransactionHTML(transaction) {
     const amountClass = isIncome ? 'income' : 'expense';
     const catInfo = getCategoryInfo(transaction.category);
 
-    // Fallback logic cho hiển thị tên
     const displayName = transaction.note ? transaction.note : transaction.category;
     const displayDate = formatDateDisplay(transaction.date);
 
@@ -86,7 +101,7 @@ function createTransactionHTML(transaction) {
             <div class="t-right">
                 <span class="t-amount ${amountClass}">${sign}${formatCurrency(transaction.amount)}</span>
                 <span class="t-category">${transaction.category}</span>
-                <button class="btn btn-delete" onclick="deleteTransaction('${transaction.id}')" style="background:none;border:none;color:var(--text-muted);cursor:pointer;padding:0;margin-top:4px;font-size:1.1rem">
+                <button class="btn btn-delete" data-id="${transaction.id}" style="background:none;border:none;color:var(--text-muted);cursor:pointer;padding:0;margin-top:4px;font-size:1.1rem">
                     <i class="ph ph-trash"></i>
                 </button>
             </div>
@@ -104,22 +119,24 @@ function updateUI() {
     const expense = transactions.filter(t => t.type === 'expense').reduce((acc, t) => acc + t.amount, 0);
 
     // Update Header Cards
-    totalBalanceEl.innerText = formatCurrency(balance);
-    totalIncomeEl.innerText = formatCurrency(income);
-    totalExpenseEl.innerText = formatCurrency(expense);
+    if (totalBalanceEl) totalBalanceEl.innerText = formatCurrency(balance);
+    if (totalIncomeEl) totalIncomeEl.innerText = formatCurrency(income);
+    if (totalExpenseEl) totalExpenseEl.innerText = formatCurrency(expense);
 
     // Render Lists
     renderRecentTransactions();
-    renderFullTransactions('all');
+    renderFullTransactions(filterTypeEl ? filterTypeEl.value : 'all');
     renderBudgets();
 
     // Update Chart
     updateChart(income, expense);
+    attachDeleteListeners();
 }
 
 function renderRecentTransactions() {
+    if (!recentTransactionsList) return;
     recentTransactionsList.innerHTML = '';
-    const recent = [...transactions].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 4);
+    const recent = [...transactions].slice(0, 4);
 
     if (recent.length === 0) {
         recentTransactionsList.innerHTML = '<div class="empty-state"><p>Chưa có giao dịch nào</p></div>';
@@ -134,7 +151,7 @@ function renderRecentTransactions() {
 function renderFullTransactions(filterType = 'all') {
     if (!fullTransactionsList) return;
     fullTransactionsList.innerHTML = '';
-    let filtered = [...transactions].sort((a, b) => new Date(b.date) - new Date(a.date));
+    let filtered = [...transactions];
 
     if (filterType !== 'all') {
         filtered = filtered.filter(t => t.type === filterType);
@@ -150,7 +167,24 @@ function renderFullTransactions(filterType = 'all') {
     });
 }
 
-// Giả lập Mock budgets để giao diện giống reference
+function attachDeleteListeners() {
+    const deleteBtns = document.querySelectorAll('.btn-delete');
+    deleteBtns.forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            const id = e.currentTarget.getAttribute('data-id');
+            if (confirm('Bạn có chắc muốn xóa giao dịch này?')) {
+                try {
+                    await deleteDoc(doc(db, "transactions", id));
+                } catch (error) {
+                    console.error("Error removing document: ", error);
+                    alert("Lỗi khi xóa giao dịch!");
+                }
+            }
+        });
+    });
+}
+
+
 const MOCK_BUDGETS = {
     'Di chuyển': 3000000,
     'Giải trí': 5000000,
@@ -167,7 +201,6 @@ function renderBudgets() {
     if (!budgetListEl) return;
     budgetListEl.innerHTML = '';
 
-    // Lấy chi tiêu theo danh mục
     const expensesByCategory = {};
     transactions.filter(t => t.type === 'expense').forEach(t => {
         if (!expensesByCategory[t.category]) expensesByCategory[t.category] = 0;
@@ -196,31 +229,13 @@ function renderBudgets() {
     });
 }
 
-// Delete Transaction
-window.deleteTransaction = function (id) {
-    if (confirm('Bạn có chắc muốn xóa giao dịch này?')) {
-        transactions = transactions.filter(t => t.id !== id);
-        updateLocalStorage();
-        updateUI();
-    }
-}
-
 // Chart Visualization
 function updateChart(income, expense) {
     const ctx = document.getElementById('financeChart');
     if (!ctx) return;
 
-    // Group expenses by day (Mock last 7 days chart)
-    const last7Days = [];
     const expenseData = [];
     for (let i = 6; i >= 0; i--) {
-        const d = new Date();
-        d.setDate(d.getDate() - i);
-        const dateStr = `T${d.getDay() === 0 ? 'CN' : d.getDay() + 1}`;
-        last7Days.push(dateStr);
-
-        // Random data for visual effect, normally we filter transactions here
-        // Since we want to replicate the reference chart look
         expenseData.push(Math.floor(Math.random() * 500000) + 100000);
     }
 
@@ -235,8 +250,8 @@ function updateChart(income, expense) {
             datasets: [{
                 label: 'Chi tiêu',
                 data: expenseData,
-                backgroundColor: 'rgba(82, 208, 130, 0.4)', // light green
-                hoverBackgroundColor: 'rgba(82, 208, 130, 1)', // solid green
+                backgroundColor: 'rgba(82, 208, 130, 0.4)',
+                hoverBackgroundColor: 'rgba(82, 208, 130, 1)',
                 borderRadius: 4,
                 borderSkipped: false,
                 barThickness: 30
@@ -254,28 +269,39 @@ function updateChart(income, expense) {
                     ticks: { color: '#8B909A', font: { family: 'Inter' } }
                 },
                 y: {
-                    display: false, // hide y axis like reference
+                    display: false,
                     grid: { display: false, drawBorder: false }
                 }
             }
         }
     });
 
-    // Make last bar active color like reference
     if (myChart.data.datasets[0].backgroundColor instanceof Array) {
         // already array
     } else {
         const bgColors = Array(7).fill('rgba(82, 208, 130, 0.4)');
-        bgColors[6] = 'rgba(82, 208, 130, 1)'; // last one solid
+        bgColors[6] = 'rgba(82, 208, 130, 1)';
         myChart.data.datasets[0].backgroundColor = bgColors;
     }
     myChart.update();
 }
 
+// REALTIME LISTENER FROM FIRESTORE
+function setupRealtimeListener() {
+    const q = query(collection(db, "transactions"), orderBy("date", "desc"));
+    onSnapshot(q, (querySnapshot) => {
+        transactions = [];
+        querySnapshot.forEach((doc) => {
+            transactions.push({ id: doc.id, ...doc.data() });
+        });
+        updateUI();
+    });
+}
 
 // Initialization setup
 function init() {
-    updateUI();
+    // Start listening to database changes
+    setupRealtimeListener();
 
     // Form and Modal Elements
     const addBtn = document.getElementById('btn-add-transaction');
@@ -309,10 +335,14 @@ function init() {
         });
     }
 
-    // Form submission
+    // Form submission saving to FIRESTORE
     if (form) {
-        form.addEventListener('submit', (e) => {
+        form.addEventListener('submit', async (e) => {
             e.preventDefault();
+
+            const submitBtn = form.querySelector('button[type="submit"]');
+            submitBtn.disabled = true;
+            submitBtn.innerText = 'Đang lưu...';
 
             const type = document.querySelector('input[name="type"]:checked').value;
             const amount = parseFloat(document.getElementById('amount').value);
@@ -320,23 +350,30 @@ function init() {
             const date = document.getElementById('date').value;
             const note = document.getElementById('note').value;
 
-            if (!amount || !category || !date) return;
+            if (!amount || !category || !date) {
+                submitBtn.disabled = false;
+                submitBtn.innerText = 'Lưu Giao Dịch';
+                return;
+            }
 
-            const newTransaction = {
-                id: generateID(),
-                type,
-                amount,
-                category,
-                date: new Date(date).toISOString(),
-                note
-            };
+            try {
+                await addDoc(collection(db, "transactions"), {
+                    type,
+                    amount,
+                    category,
+                    date: new Date(date).toISOString(),
+                    note
+                });
 
-            transactions.push(newTransaction);
-            updateLocalStorage();
-            updateUI();
-
-            modal.classList.remove('show');
-            form.reset();
+                modal.classList.remove('show');
+                form.reset();
+            } catch (e) {
+                console.error("Error adding document: ", e);
+                alert("Đã xảy ra lỗi khi lưu vào Firebase!");
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerText = 'Lưu Giao Dịch';
+            }
         });
     }
 
@@ -348,7 +385,6 @@ function init() {
     if (viewAllBtn) {
         viewAllBtn.addEventListener('click', (e) => {
             e.preventDefault();
-            // Trigger click on 'Giao dịch' navigation item
             navItems.forEach(item => {
                 if (item.getAttribute('data-page') === 'transactions') item.click();
             });
@@ -357,11 +393,9 @@ function init() {
 
     navItems.forEach(item => {
         item.addEventListener('click', () => {
-            // Update active link
             navItems.forEach(nav => nav.classList.remove('active'));
             item.classList.add('active');
 
-            // Show corresponding page
             const targetPage = item.getAttribute('data-page');
             pages.forEach(page => {
                 page.classList.remove('active');
@@ -372,10 +406,8 @@ function init() {
         });
     });
 
-    // Filter changes
-    const filterType = document.getElementById('filter-type');
-    if (filterType) {
-        filterType.addEventListener('change', (e) => {
+    if (filterTypeEl) {
+        filterTypeEl.addEventListener('change', (e) => {
             renderFullTransactions(e.target.value);
         });
     }
