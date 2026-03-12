@@ -16,145 +16,171 @@
 
 <body>
     <div class="app-container">
-        <!-- Top Navigation -->
-        <header class="top-nav">
-            <div class="logo">
-                <div class="logo-icon"><i class="ph ph-wallet"></i></div>
-                <h1>Tài chính Gia đình</h1>
-            </div>
-            <div class="nav-actions">
-                <button class="icon-btn"><i class="ph ph-bell"></i></button>
-                <div class="avatar">
-                    <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" alt="User Avatar">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="sidebar-top">
+                <div class="user-profile">
+                    <div class="avatar-large">
+                        <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" alt="User Avatar">
+                    </div>
+                    <div class="user-info">
+                        <h3>Gia đình tài chính</h3>
+                        <p>Gói Premium</p>
+                    </div>
                 </div>
-            </div>
-        </header>
 
-        <div class="main-layout">
-            <!-- Sidebar Navigation -->
-            <aside class="sidebar">
                 <ul class="nav-links">
-                    <li class="active" data-page="dashboard">
+                    <li data-page="dashboard">
                         <i class="ph ph-squares-four"></i>
                         <span>Tổng quan</span>
                     </li>
+                    <li data-page="budgets">
+                        <i class="ph ph-bank"></i>
+                        <span>Ngân sách</span>
+                    </li>
                     <li data-page="transactions">
-                        <i class="ph ph-list-dashes"></i>
+                        <i class="ph ph-arrows-left-right"></i>
                         <span>Giao dịch</span>
                     </li>
-                    <li data-page="settings">
-                        <i class="ph ph-gear"></i>
-                        <span>Cài đặt</span>
+                    <li data-page="reports">
+                        <i class="ph ph-chart-bar"></i>
+                        <span>Báo cáo</span>
+                    </li>
+                    <li class="active" data-page="tasks-notes">
+                        <i class="ph ph-note-pencil"></i>
+                        <span>Ghi chú & Công việc</span>
                     </li>
                 </ul>
-            </aside>
+            </div>
 
-            <!-- Main Content Area -->
-            <main class="main-content">
-                <!-- Dashboard Page -->
-                <section id="page-dashboard" class="page active">
-                    <div class="summary-cards">
-                        <div class="card balance-card primary-bg">
-                            <div class="card-info">
-                                <p>Tổng số dư</p>
-                                <h2 id="total-balance">0 ₫</h2>
+            <div class="sidebar-bottom">
+                <button class="btn btn-upgrade btn-block">
+                    Nâng cấp ngay
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <!-- Header section matching reference -->
+            <header class="page-header">
+                <div class="header-left">
+                    <h1 id="page-title">Ghi chú & Công việc</h1>
+                    <p class="subtitle">Quản lý các hoạt động tài chính gia đình hiệu quả hơn.</p>
+                </div>
+                <div class="header-right">
+                    <button class="btn btn-secondary"><i class="ph ph-funnel"></i> Lọc</button>
+                    <button class="btn btn-primary" id="btn-add-global">
+                        <i class="ph ph-plus"></i> Thêm mới
+                    </button>
+                </div>
+            </header>
+
+            <!-- Dashboard Page -->
+            <section id="page-dashboard" class="page">
+                <div class="summary-cards"
+                    style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-bottom: 32px;">
+                    <div class="card stat-card"
+                        style="background: var(--primary); color: white; padding: 24px; border-radius: var(--radius-xl);">
+                        <p style="opacity: 0.8; font-size: 0.9rem;">Tổng số dư</p>
+                        <h2 id="total-balance" style="font-size: 1.8rem; font-weight: 800; margin-top: 8px;">0 ₫</h2>
+                    </div>
+                    <!-- Other cards will be managed by JS -->
+                </div>
+                <div class="dashboard-grid">
+                    <!-- Dashboard widgets -->
+                </div>
+                <div class="card recent-transactions-card"
+                    style="margin-top: 24px; background: white; padding: 24px; border-radius: var(--radius-xl); box-shadow: var(--shadow-soft);">
+                    <h3>Giao dịch gần đây</h3>
+                    <div id="recent-transactions-list"></div>
+                </div>
+            </section>
+
+            <!-- Tasks & Notes Page -->
+            <section id="page-tasks-notes" class="page active">
+                <div class="notes-tasks-container">
+                    <!-- Left: Tasks -->
+                    <div class="tasks-column">
+                        <div class="section-header">
+                            <div class="section-title">
+                                <i class="ph ph-check-circle-fill" style="color: var(--primary)"></i>
+                                <h3>Danh sách công việc</h3>
                             </div>
-                            <div class="card-icon"><i class="ph ph-wallet"></i></div>
+                            <a href="#" class="link-btn">Xem tất cả</a>
                         </div>
-                        <div class="card stat-card">
-                            <div class="card-icon income-icon"><i class="ph ph-arrow-up-right"></i></div>
-                            <div class="card-info">
-                                <p>Thu nhập tháng</p>
-                                <h3 id="total-income">0 ₫</h3>
-                            </div>
+                        <div class="task-list" id="task-list-container">
+                            <!-- Tasks populated by JS -->
                         </div>
-                        <div class="card stat-card">
-                            <div class="card-icon expense-icon"><i class="ph ph-arrow-down-right"></i></div>
-                            <div class="card-info">
-                                <p>Chi tiêu tháng</p>
-                                <h3 id="total-expense">0 ₫</h3>
-                            </div>
+                        <div class="dashed-card add-btn-dashed" id="btn-add-task-empty" style="margin-top: 24px;">
+                            <i class="ph ph-plus-circle"></i>
+                            <span>Thêm công việc mới</span>
                         </div>
                     </div>
 
-                    <div class="dashboard-grid">
-                        <div class="card chart-card">
-                            <div class="card-header">
-                                <h3>Báo cáo Thu / Chi</h3>
+                    <!-- Right: Notes -->
+                    <div class="notes-column">
+                        <div class="section-header">
+                            <div class="section-title">
+                                <i class="ph ph-note-pencil-fill" style="color: var(--primary)"></i>
+                                <h3>Ghi chú nhanh</h3>
                             </div>
-                            <div class="chart-wrapper">
-                                <canvas id="financeChart"></canvas>
-                            </div>
+                            <a href="#" class="link-btn">Sắp xếp</a>
                         </div>
-                        <div class="card budget-card">
-                            <div class="card-header">
-                                <h3>Phân bổ & Ngân sách</h3>
-                            </div>
-                            <div class="budget-list" id="budget-list">
-                                <!-- Budget items populated by JS -->
+                        <div class="notes-grid" id="notes-grid-container">
+                            <!-- Notes populated by JS -->
+                            <div class="dashed-card add-btn-note-grid" id="btn-add-note-empty">
+                                <div class="note-add-icon">
+                                    <i class="ph ph-file-plus"></i>
+                                </div>
+                                <span>Tạo ghi chú mới</span>
                             </div>
                         </div>
                     </div>
+                </div>
+            </section>
 
-                    <div class="card recent-transactions-card">
-                        <div class="card-header">
-                            <h3>Giao dịch gần đây</h3>
-                            <a href="#" class="link-btn" id="view-all-btn">Xem tất cả</a>
-                        </div>
-                        <div class="transaction-list" id="recent-transactions-list">
-                            <!-- Populated by JS -->
+            <!-- Transactions Page -->
+            <section id="page-transactions" class="page">
+                <div class="card full-transactions-card"
+                    style="background: white; padding: 32px; border-radius: var(--radius-xl); box-shadow: var(--shadow-soft);">
+                    <div class="section-header">
+                        <h3>Lịch sử giao dịch</h3>
+                        <div class="header-actions" style="display: flex; gap: 12px;">
+                            <select id="filter-type" class="btn btn-secondary" style="padding: 8px 16px;">
+                                <option value="all">Tất cả</option>
+                                <option value="income">Thu nhập</option>
+                                <option value="expense">Chi tiêu</option>
+                            </select>
                         </div>
                     </div>
-                </section>
+                    <div class="transaction-list" id="full-transactions-list">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+            </section>
 
-                <!-- Transactions Page -->
-                <section id="page-transactions" class="page">
-                    <div class="card full-transactions-card">
-                        <div class="card-header">
-                            <h3>Lịch sử giao dịch</h3>
-                            <div class="header-actions">
-                                <select id="filter-type" class="filter-select">
-                                    <option value="all">Tất cả</option>
-                                    <option value="income">Thu nhập</option>
-                                    <option value="expense">Chi tiêu</option>
-                                </select>
-                                <button class="btn btn-primary" id="btn-add-transaction">
-                                    <i class="ph ph-plus"></i> Thêm mới
-                                </button>
-                            </div>
-                        </div>
-                        <div class="transaction-list full-list" id="full-transactions-list">
-                            <!-- Populated by JS -->
-                        </div>
-                    </div>
-                </section>
-
-                <!-- Settings Page -->
-                <section id="page-settings" class="page">
-                    <div class="card">
-                        <div class="card-header">
-                            <h3>Cài đặt</h3>
-                        </div>
-                        <div class="empty-state">
-                            <p>Tính năng đang phát triển</p>
-                        </div>
-                    </div>
-                </section>
-            </main>
-        </div>
+            <!-- Placeholder for other pages -->
+            <section id="page-budgets" class="page">
+                <div class="empty-state">Tính năng đang phát triển</div>
+            </section>
+            <section id="page-reports" class="page">
+                <div class="empty-state">Tính năng đang phát triển</div>
+            </section>
+        </main>
     </div>
 
-    <!-- Add Transaction Modal -->
+    <!-- Modals -->
     <div class="modal-overlay" id="transaction-modal">
         <div class="modal-content">
             <div class="modal-header">
                 <h2>Thêm Giao Dịch</h2>
                 <button class="close-modal"><i class="ph ph-x"></i></button>
             </div>
-            <form id="transaction-form">
+            <form id="transaction-form" style="display: flex; flex-direction: column; gap: 20px;">
                 <div class="form-group">
-                    <label>Loại giao dịch</label>
-                    <div class="radio-group">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600;">Loại giao dịch</label>
+                    <div class="radio-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
                         <label class="radio-btn income-radio">
                             <input type="radio" name="type" value="income" required>
                             <span>Thu nhập</span>
@@ -166,12 +192,14 @@
                     </div>
                 </div>
                 <div class="form-group">
-                    <label for="amount">Số tiền (VNĐ)</label>
-                    <input type="number" id="amount" name="amount" min="1" placeholder="Nhập số tiền..." required>
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600;">Số tiền (VNĐ)</label>
+                    <input type="number" id="amount" name="amount" placeholder="Nhập số tiền..." required
+                        style="width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: var(--radius-md);">
                 </div>
                 <div class="form-group">
-                    <label for="category">Danh mục</label>
-                    <select id="category" name="category" required>
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600;">Danh mục</label>
+                    <select id="category" name="category" required
+                        style="width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: var(--radius-md);">
                         <option value="Lương">Lương</option>
                         <option value="Mua sắm" selected>Mua sắm</option>
                         <option value="Di chuyển">Di chuyển</option>
@@ -182,15 +210,71 @@
                     </select>
                 </div>
                 <div class="form-group">
-                    <label for="date">Ngày thực hiện</label>
-                    <input type="datetime-local" id="date" name="date" required>
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600;">Ngày thực hiện</label>
+                    <input type="datetime-local" id="date" name="date" required
+                        style="width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: var(--radius-md);">
                 </div>
-                <!-- Note field hidden to fit cleaner UI, but keeping in logic -->
                 <div class="form-group">
-                    <label for="note">Tên đối tác / Ghi chú</label>
-                    <input type="text" id="note" name="note" placeholder="vd: Siêu thị WinMart...">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600;">Ghi chú</label>
+                    <input type="text" id="note" name="note" placeholder="vd: Siêu thị WinMart..."
+                        style="width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: var(--radius-md);">
                 </div>
                 <button type="submit" class="btn btn-primary btn-block">Lưu Giao Dịch</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="task-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Thêm Công Việc</h2>
+                <button class="close-modal"><i class="ph ph-x"></i></button>
+            </div>
+            <form id="task-form" style="display: flex; flex-direction: column; gap: 20px;">
+                <div class="form-group">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600;">Tiêu đề công việc</label>
+                    <input type="text" id="task-title" name="title" placeholder="Cần làm gì..." required
+                        style="width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+                </div>
+                <div class="form-group">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600;">Mức độ ưu tiên</label>
+                    <select id="task-priority" name="priority" class="btn btn-secondary btn-block">
+                        <option value="low">Thấp</option>
+                        <option value="medium" selected>Trung bình</option>
+                        <option value="high">Cao</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600;">Hạn hoàn thành</label>
+                    <input type="date" id="task-due" name="dueDate"
+                        style="width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">Lưu Công Việc</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="note-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Tạo Ghi Chú</h2>
+                <button class="close-modal"><i class="ph ph-x"></i></button>
+            </div>
+            <form id="note-form" style="display: flex; flex-direction: column; gap: 20px;">
+                <input type="text" id="note-title" name="title" placeholder="Tiêu đề..."
+                    style="width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+                <textarea id="note-content" name="content" placeholder="Nội dung..." required
+                    style="width: 100%; min-height: 120px; padding: 12px; border: 1px solid var(--border-color); border-radius: var(--radius-md);"></textarea>
+                <div class="form-group">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600;">Màu sắc</label>
+                    <select id="note-color" name="color" class="btn btn-secondary btn-block">
+                        <option value="white" selected>Trắng</option>
+                        <option value="mint">Bạc hà</option>
+                        <option value="blue">Xanh dương</option>
+                        <option value="yellow">Vàng</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">Lưu Ghi Chú</button>
             </form>
         </div>
     </div>

@@ -37,8 +37,48 @@
     --radius-lg: 16px;
     --radius-xl: 24px;
 
+    /* Notes & Tasks Design Tokens */
+    --accent-mint: #00D991;
+    --accent-mint-light: #E0F7EF;
+    --priority-high: #FF5A5A;
+    --priority-high-bg: #FFF0F0;
+    --priority-medium: #FFB020;
+    --priority-medium-bg: #FFF8E6;
+    --priority-low: #5A8CFF;
+    --priority-low-bg: #EEF3FF;
+    --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
+
     /* Transitions */
     --transition: all 0.2s ease-in-out;
+}
+
+/* Utility Classes */
+.glass-card {
+    background: rgba(255, 255, 255, 0.8) !important;
+    backdrop-filter: blur(8px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.3) !important;
+    box-shadow: var(--glass-shadow) !important;
+}
+
+.dashed-card {
+    border: 2px dashed var(--border-color) !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.dashed-card:hover {
+    border-color: var(--accent-mint);
+    background: var(--accent-mint-light) !important;
+}
+
+.pill-tag {
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
 }
 
 * {
@@ -51,26 +91,68 @@
 body {
     background-color: var(--bg-main);
     color: var(--text-main);
-    min-height: 100vh;
+    height: 100vh;
     overflow: hidden;
 }
 
 .app-container {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     height: 100vh;
+    overflow: hidden;
 }
 
-/* Top Navigation */
-.top-nav {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+/* Sidebar */
+.sidebar {
+    width: 280px;
     background-color: var(--bg-white);
-    padding: 16px 32px;
-    border-bottom: 1px solid var(--border-color);
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
-    z-index: 10;
+    border-right: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 32px 20px;
+    flex-shrink: 0;
+}
+
+.sidebar-top {
+    display: flex;
+    flex-direction: column;
+}
+
+.user-profile {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 40px;
+    padding-left: 10px;
+}
+
+.avatar-large {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: var(--primary-light);
+    overflow: hidden;
+    border: 2px solid var(--primary-light);
+    flex-shrink: 0;
+}
+
+.avatar-large img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.user-info h3 {
+    font-size: 1rem;
+    font-weight: 700;
+    margin-bottom: 2px;
+}
+
+.user-info p {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    font-weight: 500;
 }
 
 .logo {
@@ -137,18 +219,12 @@ body {
     object-fit: cover;
 }
 
-/* Main Layout */
-.main-layout {
-    display: flex;
+/* Main Content Area */
+.main-content {
     flex: 1;
-    overflow: hidden;
-}
-
-/* Sidebar */
-.sidebar {
-    width: 260px;
-    background-color: transparent;
-    padding: 32px 16px;
+    padding: 40px;
+    overflow-y: auto;
+    background-color: var(--bg-main);
 }
 
 .nav-links {
@@ -693,4 +769,192 @@ body {
     text-align: center;
     padding: 60px 0;
     color: var(--text-muted);
+}
+
+/* Tasks & Notes Container (60/40 Split) */
+.notes-tasks-container {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr;
+    gap: 40px;
+    align-items: start;
+    margin-top: 24px;
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+}
+
+.section-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.section-title i {
+    font-size: 1.4rem;
+}
+
+.section-title h3 {
+    font-size: 1.2rem;
+    font-weight: 700;
+}
+
+/* Task Item Styling */
+.task-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.task-item {
+    background: var(--bg-white);
+    padding: 16px 20px;
+    border-radius: var(--radius-lg);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+    transition: var(--transition);
+    border: 1px solid transparent;
+}
+
+.task-item:hover {
+    transform: translateY(-2px);
+    border-color: var(--primary-light);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.05);
+}
+
+.task-item.completed {
+    opacity: 0.6;
+}
+
+.custom-checkbox {
+    width: 24px;
+    height: 24px;
+    border: 2px solid var(--border-color);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: var(--transition);
+    background: white;
+    flex-shrink: 0;
+}
+
+.task-item.completed .custom-checkbox {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: white;
+}
+
+.task-content {
+    flex: 1;
+}
+
+.task-content h4 {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.task-meta {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+.priority-high {
+    color: var(--priority-high);
+    font-weight: 700;
+}
+
+.priority-medium {
+    color: var(--priority-medium);
+    font-weight: 700;
+}
+
+.priority-low {
+    color: var(--priority-low);
+    font-weight: 700;
+}
+
+/* Note Grid Styling */
+.notes-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 16px;
+}
+
+.note-item {
+    padding: 20px;
+    border-radius: var(--radius-lg);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
+    transition: var(--transition);
+    position: relative;
+    border: 1px solid rgba(0, 0, 0, 0.03);
+}
+
+.note-item:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.06);
+}
+
+.note-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.note-header h4 {
+    font-weight: 700;
+    font-size: 0.95rem;
+}
+
+.note-pin {
+    opacity: 0.3;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.note-pin.active {
+    opacity: 1;
+    color: var(--primary);
+}
+
+.note-content {
+    font-size: 0.9rem;
+    line-height: 1.5;
+    color: var(--text-main);
+    flex: 1;
+}
+
+.note-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-top: 8px;
+}
+
+.btn-task {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 1.1rem;
+    transition: var(--transition);
+}
+
+.btn-task:hover {
+    color: var(--expense);
 }

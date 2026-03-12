@@ -4,7 +4,9 @@ import {
     getFirestore,
     collection,
     addDoc,
+    setDoc,
     deleteDoc,
+    updateDoc,
     doc,
     onSnapshot,
     query,
@@ -29,6 +31,8 @@ const db = getFirestore(app);
 
 // State Management
 let transactions = [];
+let tasks = [];
+let notes = [];
 let myChart = null;
 
 // DOM Elements
@@ -286,22 +290,46 @@ function updateChart(income, expense) {
     myChart.update();
 }
 
-// REALTIME LISTENER FROM FIRESTORE
-function setupRealtimeListener() {
-    const q = query(collection(db, "transactions"), orderBy("date", "desc"));
-    onSnapshot(q, (querySnapshot) => {
+// REALTIME LISTENERS
+function setupRealtimeListeners() {
+    // Transactions
+    const qT = query(collection(db, "transactions"), orderBy("date", "desc"));
+    onSnapshot(qT, (querySnapshot) => {
         transactions = [];
         querySnapshot.forEach((doc) => {
             transactions.push({ id: doc.id, ...doc.data() });
         });
         updateUI();
     });
+
+    // Tasks
+    const qTasks = query(collection(db, "tasks"), orderBy("createdAt", "desc"));
+    onSnapshot(qTasks, (querySnapshot) => {
+        tasks = [];
+        querySnapshot.forEach((doc) => {
+            tasks.push({ id: doc.id, ...doc.data() });
+        });
+        renderTasks();
+    });
+
+    // Notes - Simplified query to avoid composite index requirement
+    // We will sort by createdAt here and handle pinning visually or client-side
+    const qNotes = query(collection(db, "notes"), orderBy("createdAt", "desc"));
+    onSnapshot(qNotes, (querySnapshot) => {
+        notes = [];
+        querySnapshot.forEach((doc) => {
+            notes.push({ id: doc.id, ...doc.data() });
+        });
+        // Sort client-side: pinned notes first
+        notes.sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0));
+        renderNotes();
+    });
 }
 
 // Initialization setup
 function init() {
     // Start listening to database changes
-    setupRealtimeListener();
+    setupRealtimeListeners();
 
     // Form and Modal Elements
     const addBtn = document.getElementById('btn-add-transaction');
@@ -393,25 +421,197 @@ function init() {
 
     navItems.forEach(item => {
         item.addEventListener('click', () => {
+            const targetPage = item.getAttribute('data-page');
+            const pageTitleEl = document.getElementById('page-title');
+            const titles = {
+                'dashboard': 'Tổng quan',
+                'budgets': 'Ngân sách',
+                'transactions': 'Lịch sử giao dịch',
+                'reports': 'Báo cáo',
+                'tasks-notes': 'Ghi chú & Công việc'
+            };
+
             navItems.forEach(nav => nav.classList.remove('active'));
             item.classList.add('active');
 
-            const targetPage = item.getAttribute('data-page');
             pages.forEach(page => {
                 page.classList.remove('active');
                 if (page.id === `page-${targetPage}`) {
                     page.classList.add('active');
                 }
             });
+
+            if (pageTitleEl && titles[targetPage]) {
+                pageTitleEl.innerText = titles[targetPage];
+            }
         });
     });
+
+    // Global Add button triggers transaction modal
+    const globalAddBtn = document.getElementById('btn-add-global');
+    if (globalAddBtn) {
+        globalAddBtn.addEventListener('click', () => {
+            const modal = document.getElementById('transaction-modal');
+            if (modal) {
+                modal.classList.add('show');
+                const now = new Date();
+                now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+                const dateInput = document.getElementById('date');
+                if (dateInput) dateInput.value = now.toISOString().slice(0, 16);
+            }
+        });
+    }
 
     if (filterTypeEl) {
         filterTypeEl.addEventListener('change', (e) => {
             renderFullTransactions(e.target.value);
         });
     }
+
+    // Task & Notes Modal Controls
+    setupTaskNotesControls();
 }
+
+function setupTaskNotesControls() {
+    const taskModal = document.getElementById('task-modal');
+    const noteModal = document.getElementById('note-modal');
+
+    // Task controls
+    document.querySelectorAll('#btn-add-task, #btn-add-task-empty').forEach(el => {
+        el.addEventListener('click', () => taskModal.classList.add('show'));
+    });
+
+    // Note controls
+    document.querySelectorAll('#btn-add-note, #btn-add-note-empty').forEach(el => {
+        el.addEventListener('click', () => noteModal.classList.add('show'));
+    });
+
+    document.querySelectorAll('.close-modal').forEach(btn => {
+        btn.addEventListener('click', () => {
+            taskModal.classList.remove('show');
+            noteModal.classList.remove('show');
+        });
+    });
+
+    // Form Submissions
+    document.getElementById('task-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const title = document.getElementById('task-title').value;
+        const priority = document.getElementById('task-priority').value;
+        const dueDate = document.getElementById('task-due').value;
+
+        try {
+            await addDoc(collection(db, "tasks"), {
+                title, priority, dueDate,
+                completed: false,
+                createdAt: new Date().toISOString()
+            });
+            taskModal.classList.remove('show');
+            e.target.reset();
+        } catch (err) { console.error(err); }
+    });
+
+    document.getElementById('note-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const title = document.getElementById('note-title').value;
+        const content = document.getElementById('note-content').value;
+        const color = document.getElementById('note-color').value;
+
+        try {
+            await addDoc(collection(db, "notes"), {
+                title, content, color,
+                pinned: false,
+                createdAt: new Date().toISOString()
+            });
+            noteModal.classList.remove('show');
+            e.target.reset();
+        } catch (err) { console.error(err); }
+    });
+}
+
+function renderTasks() {
+    const container = document.getElementById('task-list-container');
+    if (!container) return;
+    container.innerHTML = '';
+
+    if (tasks.length > 0) {
+        document.getElementById('btn-add-task-empty').style.display = 'none';
+    } else {
+        document.getElementById('btn-add-task-empty').style.display = 'flex';
+    }
+
+    tasks.forEach(task => {
+        const item = document.createElement('div');
+        item.className = `task-item ${task.completed ? 'completed' : ''}`;
+        item.innerHTML = `
+            <div class="custom-checkbox" onclick="toggleTask('${task.id}', ${task.completed})">
+                ${task.completed ? '<i class="ph ph-check"></i>' : ''}
+            </div>
+            <div class="task-content">
+                <h4>${task.title}</h4>
+                <div class="task-meta">
+                    <span class="pill-tag priority-${task.priority}">${task.priority === 'high' ? 'Cao' : task.priority === 'medium' ? 'Trung bình' : 'Thấp'}</span>
+                    ${task.dueDate ? `<span><i class="ph ph-calendar"></i> ${task.dueDate}</span>` : ''}
+                </div>
+            </div>
+            <div class="task-actions">
+                <button class="btn-task" onclick="deleteTask('${task.id}')"><i class="ph ph-trash"></i></button>
+            </div>
+        `;
+        container.appendChild(item);
+    });
+}
+
+function renderNotes() {
+    const container = document.getElementById('notes-grid-container');
+    if (!container) return;
+
+    // Keep the "Add" button
+    const addButton = document.getElementById('btn-add-note-empty');
+    container.innerHTML = '';
+    container.appendChild(addButton);
+
+    const colorMap = {
+        'mint': '#E0F7EF',
+        'blue': '#EEF3FF',
+        'yellow': '#FFF8E6',
+        'white': '#FFFFFF'
+    };
+
+    notes.forEach(note => {
+        const item = document.createElement('div');
+        item.className = `note-item ${note.pinned ? 'pinned' : ''}`;
+        item.style.backgroundColor = colorMap[note.color] || '#FFFFFF';
+        item.innerHTML = `
+            <div class="note-header">
+                <h4>${note.title || 'Ghi chú'}</h4>
+                <div class="note-pin ${note.pinned ? 'active' : ''}" onclick="toggleNotePin('${note.id}', ${note.pinned})">
+                    <i class="ph ph-push-pin${note.pinned ? '-fill' : ''}"></i>
+                </div>
+            </div>
+            <div class="note-content">${note.content}</div>
+            <div class="note-footer">
+                <span>${new Date(note.createdAt).toLocaleDateString('vi-VN')}</span>
+                <button class="btn-task" onclick="deleteNote('${note.id}')"><i class="ph ph-trash"></i></button>
+            </div>
+        `;
+        container.insertBefore(item, addButton);
+    });
+}
+
+// Global functions for inline onclick handlers
+window.toggleTask = async (id, current) => {
+    try { await updateDoc(doc(db, "tasks", id), { completed: !current }); } catch (err) { }
+};
+window.deleteTask = async (id) => {
+    if (confirm('Xóa công việc này?')) await deleteDoc(doc(db, "tasks", id));
+};
+window.toggleNotePin = async (id, current) => {
+    try { await updateDoc(doc(db, "notes", id), { pinned: !current }); } catch (err) { }
+};
+window.deleteNote = async (id) => {
+    if (confirm('Xóa ghi chú này?')) await deleteDoc(doc(db, "notes", id));
+};
 
 // Start app
 document.addEventListener('DOMContentLoaded', init);
